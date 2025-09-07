@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simple QR Code Generator</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Roboto, "Segoe UI", Arial; background:#f6f8fb; color:#111; padding:24px; }
+    .card { max-width:760px; margin:18px auto; background:#fff; border-radius:12px; padding:20px; box-shadow:0 6px 20px rgba(19,30,51,0.06);}
+    h1 { margin:0 0 12px; font-size:20px; }
+    label { display:block; margin-top:12px; font-size:13px; color:#444; }
+    input[type="text"], select { width:100%; padding:10px 12px; margin-top:6px; border:1px solid #e3e7ee; border-radius:8px; font-size:14px; }
+    .row { display:flex; gap:10px; margin-top:12px; }
+    .row > * { flex:1; }
+    button { background:#1f6feb; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; font-weight:600; }
+    button.secondary { background:#e6eefc; color:#084298; }
+    #qrcode { margin-top:18px; text-align:center; }
+    small { color:#666; }
+    .footer { margin-top:14px; font-size:13px; color:#666; text-align:center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>QR Code Generator</h1>
+    <div>
+      <label>Text or URL</label>
+      <input id="text" type="text" placeholder="https://example.com or some text" value="https://techfly360.com" />
+      <div class="row">
+        <div>
+          <label>Size (px)</label>
+          <select id="size">
+            <option value="150">150</option>
+            <option value="250" selected>250</option>
+            <option value="350">350</option>
+            <option value="500">500</option>
+          </select>
+        </div>
+        <div>
+          <label>Error Correction</label>
+          <select id="level">
+            <option value="L">L - Low (7%)</option>
+            <option value="M" selected>M - Medium (15%)</option>
+            <option value="Q">Q - Quartile (25%)</option>
+            <option value="H">H - High (30%)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:14px;">
+        <button id="generateBtn">Generate QR</button>
+        <button id="downloadBtn" class="secondary" disabled>Download PNG</button>
+      </div>
+
+      <div id="qrcode"></div>
+      <div class="footer">Tip: Use a full URL (https://...) for websites. Change size for higher resolution.</div>
+    </div>
+  </div>
+
+  <!-- QRCode.js from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    const qrcodeContainer = document.getElementById('qrcode');
+    const generateBtn = document.getElementById('generateBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const textInput = document.getElementById('text');
+    const sizeSelect = document.getElementById('size');
+    const levelSelect = document.getElementById('level');
+    let qrcode = null;
+
+    function clearQRCode() {
+      qrcodeContainer.innerHTML = '';
+      qrcode = null;
+      downloadBtn.disabled = true;
+    }
+
+    function generateQR() {
+      clearQRCode();
+      const text = textInput.value.trim();
+      if (!text) {
+        alert('Kuch text ya URL dal do pehle.');
+        return;
+      }
+      const size = parseInt(sizeSelect.value, 10);
+      const level = levelSelect.value; // L, M, Q, H
+
+      qrcode = new QRCode(qrcodeContainer, {
+        text: text,
+        width: size,
+        height: size,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel[level]
+      });
+
+      // Wait a tick then enable download
+      setTimeout(()=> {
+        downloadBtn.disabled = false;
+      }, 100);
+    }
+
+    function downloadPNG() {
+      if (!qrcode) return;
+      // QRCode.js uses a <img> or <canvas> inside container; find it
+      const img = qrcodeContainer.querySelector('img');
+      const canvas = qrcodeContainer.querySelector('canvas');
+      let dataUrl;
+      if (img) {
+        // img src is data url PNG already
+        dataUrl = img.src;
+      } else if (canvas) {
+        dataUrl = canvas.toDataURL('image/png');
+      } else {
+        alert('QR generate nahi hua abhi.');
+        return;
+      }
+      // create temporary link to download
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      const safeText = textInput.value.trim().replace(/[^a-z0-9]/gi, '_').slice(0,40);
+      a.download = (safeText || 'qr') + '.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    generateBtn.addEventListener('click', generateQR);
+    downloadBtn.addEventListener('click', downloadPNG);
+
+    // generate initial sample on load
+    window.addEventListener('load', () => { generateQR(); });
+  </script>
+</body>
+</html>
